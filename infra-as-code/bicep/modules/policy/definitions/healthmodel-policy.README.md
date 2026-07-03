@@ -131,6 +131,7 @@ az group delete --name rg-alz-healthmodels --yes
 
 - The DINE rule anchors on the target resource group, since the anchor must already exist. `existenceCondition` on the health model name decides compliance, so the model drives it, not the resource group.
 - `addResourceHealthSignal` is fixed to `Enabled` in every rule, not a parameter.
+- `discoverRelationships` is fixed to `Enabled` in every rule, so CloudHealth maps relationships between discovered resources (for example a subnet to its virtual network) instead of leaving them as flat entities.
 - `Microsoft.CloudHealth` has no strong Bicep types, so `az bicep build` accepts invalid shapes. Confirm every change with a live deploy.
 - Changing the parameter set is not an in-place definition update. Delete the assignment and definition, then redeploy.
 - `ReEvaluateCompliance` remediation can stall, so the steps above use `trigger-scan` then the default remediation mode.
