@@ -16,33 +16,35 @@ A `DeployIfNotExists` policy that creates one `Microsoft.CloudHealth/healthmodel
 - currently only a single subscription is supported in the query per domain, I guess in reality you would have multiple
 - in reality, maybe ALZ resources are found via the management group, that's not yet in the policy
 - it uses a single authentication setting/identity for all four discovery rules
-
+- the tags filter support is kinda special, I wasn't sure how support any number of tags... so I kinda limis it to 5.
 
 ## Parameters
 
 Each domain query is
-- `resources | [where subscriptionId =~ '<sub>' |] where type in~ (<types>) | project id`
+- `resources | where subscriptionId =~ '<sub>' | [where tags['<k>'] =~ '<v>' | ...] where type in~ (<types>) | project id`
 - where `<types>` is `includedResourceTypesGlobal` unioned with `<domain>ResourceTypes`.
 
-The template adds the `subscriptionId` clause only when you set `<domain>SubscriptionId`.
+Every domain is scoped to one subscription (the `subscriptionId` clause is always present). Each tag pair in the domain's tag filter adds one `where tags['<key>'] =~ '<value>'` clause, and all of them must match (AND).
 
-A non-empty `<domain>QueryOverride` replaces the whole query.
+Two limits on the tag filter:
+- A domain takes at most 5 tag pairs. The bicep enforces this with `@maxLength(5)`, so a 6th pair fails the deployment rather than being silently dropped.
+- Keys and values go into the query verbatim. A single quote in a key or value breaks the generated KQL, so do not use quotes in tag keys or values you filter on.
 
 | Parameter | Type | Purpose |
 |---|---|---|
 | `includedResourceTypesGlobal` | Array | Types added to every domain. Empty by default; a hook to inject one type everywhere. |
 | `{security,connectivity,management,identity}ResourceTypes` | Array | Types for that domain, unioned with the global list. Ships with per-domain defaults. |
-| `{security,...}SubscriptionId` | String (`''`) | Optional. Scopes that domain to one subscription. Empty spans every subscription the identity can read. |
-| `{security,...}QueryOverride` | String (`''`) | Full query replacement for that domain. Empty auto-builds from the types and subscription id. |
+| `{security,...}SubscriptionId` | String (required) | Subscription the domain discovery is scoped to. Defaults to the deploying subscription. |
+| `{security,...}TagFilter` | Array (`[]`) | Optional list of `{ key, value }` tag pairs that must all match (AND) for a resource to be discovered. Empty means no tag filtering. Up to 5 pairs per domain. |
 | `effect`, `enforcementMode` | String | Standard policy knobs. |
 | `targetResourceGroupName`, `healthModelName`, `identityName`, `location`, `policyName`, `assignmentName` | String | Placement and names. |
 
 Four ways to drive it:
 
-1. Deploy with defaults.
+1. Deploy with defaults (each domain uses the deploying subscription and its type list).
 2. Add types to `includedResourceTypesGlobal` (all domains) or one `{domain}ResourceTypes`.
-3. Pin a domain to a subscription with `{domain}SubscriptionId`.
-4. Replace a domain query with `{domain}QueryOverride`.
+3. Point a domain at a different subscription with `{domain}SubscriptionId`.
+4. Narrow a domain to tagged resources with `{domain}TagFilter`, for example `[{ key: 'env', value: 'prod' }]`.
 
 ## Which subscriptions get discovered
 
@@ -129,7 +131,7 @@ az group delete --name rg-alz-healthmodels --yes
 
 ## Notes
 
-- The DINE rule anchors on the target resource group, since the anchor must already exist. `existenceCondition` on the health model name decides compliance, so the model drives it, not the resource group.
+- The DINE rule anchors on the target resource group, since the anchor must already exist. A `details.name` lookup on the health model decides compliance (Policy does a direct GET on that one model), so the model drives it, not the resource group.
 - `addResourceHealthSignal` is fixed to `Enabled` in every rule, not a parameter.
 - `discoverRelationships` is fixed to `Enabled` in every rule, so CloudHealth maps relationships between discovered resources (for example a subnet to its virtual network) instead of leaving them as flat entities.
 - `Microsoft.CloudHealth` has no strong Bicep types, so `az bicep build` accepts invalid shapes. Confirm every change with a live deploy.

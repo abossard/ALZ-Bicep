@@ -83,29 +83,37 @@ param identityResourceTypes array = [
   'Microsoft.Network/privateDnsZones'
 ]
 
-@description('Optional subscription id to scope the Security domain discovery to. Empty = discover across every subscription the discovery identity can read.')
-param securitySubscriptionId string = ''
+@description('Subscription id whose resources the Security domain discovery queries. Required.')
+@minLength(36)
+param securitySubscriptionId string = 'b2af20ad-98fa-4aa7-94c3-059663641d9f'
 
-@description('Optional subscription id to scope the Connectivity domain discovery to. Empty = discover across every subscription the discovery identity can read.')
-param connectivitySubscriptionId string = ''
+@description('Subscription id whose resources the Connectivity domain discovery queries. Required.')
+@minLength(36)
+param connectivitySubscriptionId string = 'b2af20ad-98fa-4aa7-94c3-059663641d9f'
 
-@description('Optional subscription id to scope the Management domain discovery to. Empty = discover across every subscription the discovery identity can read.')
-param managementSubscriptionId string = ''
+@description('Subscription id whose resources the Management domain discovery queries. Required.')
+@minLength(36)
+param managementSubscriptionId string = 'b2af20ad-98fa-4aa7-94c3-059663641d9f'
 
-@description('Optional subscription id to scope the Identity domain discovery to. Empty = discover across every subscription the discovery identity can read.')
-param identitySubscriptionId string = ''
+@description('Subscription id whose resources the Identity domain discovery queries. Required.')
+@minLength(36)
+param identitySubscriptionId string = 'b2af20ad-98fa-4aa7-94c3-059663641d9f'
 
-@description('Optional full Resource Graph query override for the Security domain. Leave empty to auto-build from securityResourceTypes + includedResourceTypesGlobal (and securitySubscriptionId if set). If set, it is used verbatim.')
-param securityQueryOverride string = ''
+@description('Optional tag filter for the Security domain: a list of { key, value } pairs that must ALL match (AND) on a resource for it to be discovered. Empty by default (no tag filtering). Up to 5 pairs (the embedded query builds a fixed number of clauses).')
+@maxLength(5)
+param securityTagFilter array = []
 
-@description('Optional full Resource Graph query override for the Connectivity domain. Leave empty to auto-build from connectivityResourceTypes + includedResourceTypesGlobal (and connectivitySubscriptionId if set). If set, it is used verbatim.')
-param connectivityQueryOverride string = ''
+@description('Optional tag filter for the Connectivity domain: a list of { key, value } pairs that must ALL match (AND) on a resource for it to be discovered. Empty by default (no tag filtering). Up to 5 pairs (the embedded query builds a fixed number of clauses).')
+@maxLength(5)
+param connectivityTagFilter array = []
 
-@description('Optional full Resource Graph query override for the Management domain. Leave empty to auto-build from managementResourceTypes + includedResourceTypesGlobal (and managementSubscriptionId if set). If set, it is used verbatim.')
-param managementQueryOverride string = ''
+@description('Optional tag filter for the Management domain: a list of { key, value } pairs that must ALL match (AND) on a resource for it to be discovered. Empty by default (no tag filtering). Up to 5 pairs (the embedded query builds a fixed number of clauses).')
+@maxLength(5)
+param managementTagFilter array = []
 
-@description('Optional full Resource Graph query override for the Identity domain. Leave empty to auto-build from identityResourceTypes + includedResourceTypesGlobal (and identitySubscriptionId if set). If set, it is used verbatim.')
-param identityQueryOverride string = ''
+@description('Optional tag filter for the Identity domain: a list of { key, value } pairs that must ALL match (AND) on a resource for it to be discovered. Empty by default (no tag filtering). Up to 5 pairs (the embedded query builds a fixed number of clauses).')
+@maxLength(5)
+param identityTagFilter array = []
 
 // Variables
 
@@ -249,56 +257,56 @@ resource policyDefinition 'Microsoft.Authorization/policyDefinitions@2025-01-01'
         type: 'String'
         metadata: {
           displayName: 'Security subscription id'
-          description: 'Optional. Scope Security discovery to a single subscription id (adds a where subscriptionId clause). Empty discovers across every subscription the identity can read - set this when Security lives in its own platform subscription.'
+          description: 'Required. Subscription id the Security domain discovery query is scoped to (adds a where subscriptionId clause).'
         }
       }
       connectivitySubscriptionId: {
         type: 'String'
         metadata: {
           displayName: 'Connectivity subscription id'
-          description: 'Optional. Scope Connectivity discovery to a single subscription id (adds a where subscriptionId clause). Empty discovers across every subscription the identity can read - set this when Connectivity lives in its own platform subscription.'
+          description: 'Required. Subscription id the Connectivity domain discovery query is scoped to (adds a where subscriptionId clause).'
         }
       }
       managementSubscriptionId: {
         type: 'String'
         metadata: {
           displayName: 'Management subscription id'
-          description: 'Optional. Scope Management discovery to a single subscription id (adds a where subscriptionId clause). Empty discovers across every subscription the identity can read - set this when Management lives in its own platform subscription.'
+          description: 'Required. Subscription id the Management domain discovery query is scoped to (adds a where subscriptionId clause).'
         }
       }
       identitySubscriptionId: {
         type: 'String'
         metadata: {
           displayName: 'Identity subscription id'
-          description: 'Optional. Scope Identity discovery to a single subscription id (adds a where subscriptionId clause). Empty discovers across every subscription the identity can read - set this when Identity lives in its own platform subscription.'
+          description: 'Required. Subscription id the Identity domain discovery query is scoped to (adds a where subscriptionId clause).'
         }
       }
-      securityQueryOverride: {
-        type: 'String'
+      securityTagFilter: {
+        type: 'Array'
         metadata: {
-          displayName: 'Security query override'
-          description: 'Optional. Full Resource Graph query used verbatim for the Security domain. Empty auto-builds the query from Security and global resource types (and the Security subscription id when set).'
+          displayName: 'Security tag filter'
+          description: 'Optional list of { key, value } tag pairs that must all match (AND) for a resource to be discovered in the Security domain. Empty means no tag filtering.'
         }
       }
-      connectivityQueryOverride: {
-        type: 'String'
+      connectivityTagFilter: {
+        type: 'Array'
         metadata: {
-          displayName: 'Connectivity query override'
-          description: 'Optional. Full Resource Graph query used verbatim for the Connectivity domain. Empty auto-builds the query from Connectivity and global resource types (and the Connectivity subscription id when set).'
+          displayName: 'Connectivity tag filter'
+          description: 'Optional list of { key, value } tag pairs that must all match (AND) for a resource to be discovered in the Connectivity domain. Empty means no tag filtering.'
         }
       }
-      managementQueryOverride: {
-        type: 'String'
+      managementTagFilter: {
+        type: 'Array'
         metadata: {
-          displayName: 'Management query override'
-          description: 'Optional. Full Resource Graph query used verbatim for the Management domain. Empty auto-builds the query from Management and global resource types (and the Management subscription id when set).'
+          displayName: 'Management tag filter'
+          description: 'Optional list of { key, value } tag pairs that must all match (AND) for a resource to be discovered in the Management domain. Empty means no tag filtering.'
         }
       }
-      identityQueryOverride: {
-        type: 'String'
+      identityTagFilter: {
+        type: 'Array'
         metadata: {
-          displayName: 'Identity query override'
-          description: 'Optional. Full Resource Graph query used verbatim for the Identity domain. Empty auto-builds the query from Identity and global resource types (and the Identity subscription id when set).'
+          displayName: 'Identity tag filter'
+          description: 'Optional list of { key, value } tag pairs that must all match (AND) for a resource to be discovered in the Identity domain. Empty means no tag filtering.'
         }
       }
     }
@@ -319,11 +327,8 @@ resource policyDefinition 'Microsoft.Authorization/policyDefinitions@2025-01-01'
         effect: '[parameters(\'effect\')]'
         details: {
           type: 'Microsoft.CloudHealth/healthmodels'
+          name: '[parameters(\'healthModelName\')]'
           existenceScope: 'resourceGroup'
-          existenceCondition: {
-            field: 'name'
-            equals: '[parameters(\'healthModelName\')]'
-          }
           deploymentScope: 'resourceGroup'
           roleDefinitionIds: [
             '/providers/Microsoft.Authorization/roleDefinitions/${builtInRoleIds.Contributor}'
@@ -372,17 +377,17 @@ resource policyDefinition 'Microsoft.Authorization/policyDefinitions@2025-01-01'
                 identitySubscriptionId: {
                   value: '[parameters(\'identitySubscriptionId\')]'
                 }
-                securityQueryOverride: {
-                  value: '[parameters(\'securityQueryOverride\')]'
+                securityTagFilter: {
+                  value: '[parameters(\'securityTagFilter\')]'
                 }
-                connectivityQueryOverride: {
-                  value: '[parameters(\'connectivityQueryOverride\')]'
+                connectivityTagFilter: {
+                  value: '[parameters(\'connectivityTagFilter\')]'
                 }
-                managementQueryOverride: {
-                  value: '[parameters(\'managementQueryOverride\')]'
+                managementTagFilter: {
+                  value: '[parameters(\'managementTagFilter\')]'
                 }
-                identityQueryOverride: {
-                  value: '[parameters(\'identityQueryOverride\')]'
+                identityTagFilter: {
+                  value: '[parameters(\'identityTagFilter\')]'
                 }
               }
               template: {
@@ -428,36 +433,52 @@ resource policyDefinition 'Microsoft.Authorization/policyDefinitions@2025-01-01'
                   identitySubscriptionId: {
                     type: 'string'
                   }
-                  securityQueryOverride: {
-                    type: 'string'
+                  securityTagFilter: {
+                    type: 'array'
                   }
-                  connectivityQueryOverride: {
-                    type: 'string'
+                  connectivityTagFilter: {
+                    type: 'array'
                   }
-                  managementQueryOverride: {
-                    type: 'string'
+                  managementTagFilter: {
+                    type: 'array'
                   }
-                  identityQueryOverride: {
-                    type: 'string'
+                  identityTagFilter: {
+                    type: 'array'
                   }
                 }
                 variables: {
                   securityTypes: '[union(parameters(\'includedResourceTypesGlobal\'), parameters(\'securityResourceTypes\'))]'
-                  securitySubFilter: '[if(empty(parameters(\'securitySubscriptionId\')), \'\', concat(\'where subscriptionId =~ \'\'\', parameters(\'securitySubscriptionId\'), \'\'\' | \'))]'
-                  securityAutoQuery: '[concat(\'resources | \', variables(\'securitySubFilter\'), \'where type in~ (\', concat(\'\'\'\', join(variables(\'securityTypes\'), \'\'\',\'\'\'), \'\'\'\'), \') | project id\')]'
-                  securityQuery: '[if(empty(parameters(\'securityQueryOverride\')), variables(\'securityAutoQuery\'), parameters(\'securityQueryOverride\'))]'
+                  securityTagClause0: '[if(greater(length(parameters(\'securityTagFilter\')), 0), concat(\'where tags[\'\'\', parameters(\'securityTagFilter\')[0].key, \'\'\'] =~ \'\'\', parameters(\'securityTagFilter\')[0].value, \'\'\' | \'), \'\')]'
+                  securityTagClause1: '[if(greater(length(parameters(\'securityTagFilter\')), 1), concat(\'where tags[\'\'\', parameters(\'securityTagFilter\')[1].key, \'\'\'] =~ \'\'\', parameters(\'securityTagFilter\')[1].value, \'\'\' | \'), \'\')]'
+                  securityTagClause2: '[if(greater(length(parameters(\'securityTagFilter\')), 2), concat(\'where tags[\'\'\', parameters(\'securityTagFilter\')[2].key, \'\'\'] =~ \'\'\', parameters(\'securityTagFilter\')[2].value, \'\'\' | \'), \'\')]'
+                  securityTagClause3: '[if(greater(length(parameters(\'securityTagFilter\')), 3), concat(\'where tags[\'\'\', parameters(\'securityTagFilter\')[3].key, \'\'\'] =~ \'\'\', parameters(\'securityTagFilter\')[3].value, \'\'\' | \'), \'\')]'
+                  securityTagClause4: '[if(greater(length(parameters(\'securityTagFilter\')), 4), concat(\'where tags[\'\'\', parameters(\'securityTagFilter\')[4].key, \'\'\'] =~ \'\'\', parameters(\'securityTagFilter\')[4].value, \'\'\' | \'), \'\')]'
+                  securityTagClause: '[concat(variables(\'securityTagClause0\'), variables(\'securityTagClause1\'), variables(\'securityTagClause2\'), variables(\'securityTagClause3\'), variables(\'securityTagClause4\'))]'
+                  securityQuery: '[concat(\'resources | where subscriptionId =~ \'\'\', parameters(\'securitySubscriptionId\'), \'\'\' | \', variables(\'securityTagClause\'), \'where type in~ (\', concat(\'\'\'\', join(variables(\'securityTypes\'), \'\'\',\'\'\'), \'\'\'\'), \') | project id\')]'
                   connectivityTypes: '[union(parameters(\'includedResourceTypesGlobal\'), parameters(\'connectivityResourceTypes\'))]'
-                  connectivitySubFilter: '[if(empty(parameters(\'connectivitySubscriptionId\')), \'\', concat(\'where subscriptionId =~ \'\'\', parameters(\'connectivitySubscriptionId\'), \'\'\' | \'))]'
-                  connectivityAutoQuery: '[concat(\'resources | \', variables(\'connectivitySubFilter\'), \'where type in~ (\', concat(\'\'\'\', join(variables(\'connectivityTypes\'), \'\'\',\'\'\'), \'\'\'\'), \') | project id\')]'
-                  connectivityQuery: '[if(empty(parameters(\'connectivityQueryOverride\')), variables(\'connectivityAutoQuery\'), parameters(\'connectivityQueryOverride\'))]'
+                  connectivityTagClause0: '[if(greater(length(parameters(\'connectivityTagFilter\')), 0), concat(\'where tags[\'\'\', parameters(\'connectivityTagFilter\')[0].key, \'\'\'] =~ \'\'\', parameters(\'connectivityTagFilter\')[0].value, \'\'\' | \'), \'\')]'
+                  connectivityTagClause1: '[if(greater(length(parameters(\'connectivityTagFilter\')), 1), concat(\'where tags[\'\'\', parameters(\'connectivityTagFilter\')[1].key, \'\'\'] =~ \'\'\', parameters(\'connectivityTagFilter\')[1].value, \'\'\' | \'), \'\')]'
+                  connectivityTagClause2: '[if(greater(length(parameters(\'connectivityTagFilter\')), 2), concat(\'where tags[\'\'\', parameters(\'connectivityTagFilter\')[2].key, \'\'\'] =~ \'\'\', parameters(\'connectivityTagFilter\')[2].value, \'\'\' | \'), \'\')]'
+                  connectivityTagClause3: '[if(greater(length(parameters(\'connectivityTagFilter\')), 3), concat(\'where tags[\'\'\', parameters(\'connectivityTagFilter\')[3].key, \'\'\'] =~ \'\'\', parameters(\'connectivityTagFilter\')[3].value, \'\'\' | \'), \'\')]'
+                  connectivityTagClause4: '[if(greater(length(parameters(\'connectivityTagFilter\')), 4), concat(\'where tags[\'\'\', parameters(\'connectivityTagFilter\')[4].key, \'\'\'] =~ \'\'\', parameters(\'connectivityTagFilter\')[4].value, \'\'\' | \'), \'\')]'
+                  connectivityTagClause: '[concat(variables(\'connectivityTagClause0\'), variables(\'connectivityTagClause1\'), variables(\'connectivityTagClause2\'), variables(\'connectivityTagClause3\'), variables(\'connectivityTagClause4\'))]'
+                  connectivityQuery: '[concat(\'resources | where subscriptionId =~ \'\'\', parameters(\'connectivitySubscriptionId\'), \'\'\' | \', variables(\'connectivityTagClause\'), \'where type in~ (\', concat(\'\'\'\', join(variables(\'connectivityTypes\'), \'\'\',\'\'\'), \'\'\'\'), \') | project id\')]'
                   managementTypes: '[union(parameters(\'includedResourceTypesGlobal\'), parameters(\'managementResourceTypes\'))]'
-                  managementSubFilter: '[if(empty(parameters(\'managementSubscriptionId\')), \'\', concat(\'where subscriptionId =~ \'\'\', parameters(\'managementSubscriptionId\'), \'\'\' | \'))]'
-                  managementAutoQuery: '[concat(\'resources | \', variables(\'managementSubFilter\'), \'where type in~ (\', concat(\'\'\'\', join(variables(\'managementTypes\'), \'\'\',\'\'\'), \'\'\'\'), \') | project id\')]'
-                  managementQuery: '[if(empty(parameters(\'managementQueryOverride\')), variables(\'managementAutoQuery\'), parameters(\'managementQueryOverride\'))]'
+                  managementTagClause0: '[if(greater(length(parameters(\'managementTagFilter\')), 0), concat(\'where tags[\'\'\', parameters(\'managementTagFilter\')[0].key, \'\'\'] =~ \'\'\', parameters(\'managementTagFilter\')[0].value, \'\'\' | \'), \'\')]'
+                  managementTagClause1: '[if(greater(length(parameters(\'managementTagFilter\')), 1), concat(\'where tags[\'\'\', parameters(\'managementTagFilter\')[1].key, \'\'\'] =~ \'\'\', parameters(\'managementTagFilter\')[1].value, \'\'\' | \'), \'\')]'
+                  managementTagClause2: '[if(greater(length(parameters(\'managementTagFilter\')), 2), concat(\'where tags[\'\'\', parameters(\'managementTagFilter\')[2].key, \'\'\'] =~ \'\'\', parameters(\'managementTagFilter\')[2].value, \'\'\' | \'), \'\')]'
+                  managementTagClause3: '[if(greater(length(parameters(\'managementTagFilter\')), 3), concat(\'where tags[\'\'\', parameters(\'managementTagFilter\')[3].key, \'\'\'] =~ \'\'\', parameters(\'managementTagFilter\')[3].value, \'\'\' | \'), \'\')]'
+                  managementTagClause4: '[if(greater(length(parameters(\'managementTagFilter\')), 4), concat(\'where tags[\'\'\', parameters(\'managementTagFilter\')[4].key, \'\'\'] =~ \'\'\', parameters(\'managementTagFilter\')[4].value, \'\'\' | \'), \'\')]'
+                  managementTagClause: '[concat(variables(\'managementTagClause0\'), variables(\'managementTagClause1\'), variables(\'managementTagClause2\'), variables(\'managementTagClause3\'), variables(\'managementTagClause4\'))]'
+                  managementQuery: '[concat(\'resources | where subscriptionId =~ \'\'\', parameters(\'managementSubscriptionId\'), \'\'\' | \', variables(\'managementTagClause\'), \'where type in~ (\', concat(\'\'\'\', join(variables(\'managementTypes\'), \'\'\',\'\'\'), \'\'\'\'), \') | project id\')]'
                   identityTypes: '[union(parameters(\'includedResourceTypesGlobal\'), parameters(\'identityResourceTypes\'))]'
-                  identitySubFilter: '[if(empty(parameters(\'identitySubscriptionId\')), \'\', concat(\'where subscriptionId =~ \'\'\', parameters(\'identitySubscriptionId\'), \'\'\' | \'))]'
-                  identityAutoQuery: '[concat(\'resources | \', variables(\'identitySubFilter\'), \'where type in~ (\', concat(\'\'\'\', join(variables(\'identityTypes\'), \'\'\',\'\'\'), \'\'\'\'), \') | project id\')]'
-                  identityQuery: '[if(empty(parameters(\'identityQueryOverride\')), variables(\'identityAutoQuery\'), parameters(\'identityQueryOverride\'))]'
+                  identityTagClause0: '[if(greater(length(parameters(\'identityTagFilter\')), 0), concat(\'where tags[\'\'\', parameters(\'identityTagFilter\')[0].key, \'\'\'] =~ \'\'\', parameters(\'identityTagFilter\')[0].value, \'\'\' | \'), \'\')]'
+                  identityTagClause1: '[if(greater(length(parameters(\'identityTagFilter\')), 1), concat(\'where tags[\'\'\', parameters(\'identityTagFilter\')[1].key, \'\'\'] =~ \'\'\', parameters(\'identityTagFilter\')[1].value, \'\'\' | \'), \'\')]'
+                  identityTagClause2: '[if(greater(length(parameters(\'identityTagFilter\')), 2), concat(\'where tags[\'\'\', parameters(\'identityTagFilter\')[2].key, \'\'\'] =~ \'\'\', parameters(\'identityTagFilter\')[2].value, \'\'\' | \'), \'\')]'
+                  identityTagClause3: '[if(greater(length(parameters(\'identityTagFilter\')), 3), concat(\'where tags[\'\'\', parameters(\'identityTagFilter\')[3].key, \'\'\'] =~ \'\'\', parameters(\'identityTagFilter\')[3].value, \'\'\' | \'), \'\')]'
+                  identityTagClause4: '[if(greater(length(parameters(\'identityTagFilter\')), 4), concat(\'where tags[\'\'\', parameters(\'identityTagFilter\')[4].key, \'\'\'] =~ \'\'\', parameters(\'identityTagFilter\')[4].value, \'\'\' | \'), \'\')]'
+                  identityTagClause: '[concat(variables(\'identityTagClause0\'), variables(\'identityTagClause1\'), variables(\'identityTagClause2\'), variables(\'identityTagClause3\'), variables(\'identityTagClause4\'))]'
+                  identityQuery: '[concat(\'resources | where subscriptionId =~ \'\'\', parameters(\'identitySubscriptionId\'), \'\'\' | \', variables(\'identityTagClause\'), \'where type in~ (\', concat(\'\'\'\', join(variables(\'identityTypes\'), \'\'\',\'\'\'), \'\'\'\'), \') | project id\')]'
                 }
                 resources: [
                   {
@@ -677,17 +698,17 @@ resource policyAssignment 'Microsoft.Authorization/policyAssignments@2025-01-01'
       identitySubscriptionId: {
         value: identitySubscriptionId
       }
-      securityQueryOverride: {
-        value: securityQueryOverride
+      securityTagFilter: {
+        value: securityTagFilter
       }
-      connectivityQueryOverride: {
-        value: connectivityQueryOverride
+      connectivityTagFilter: {
+        value: connectivityTagFilter
       }
-      managementQueryOverride: {
-        value: managementQueryOverride
+      managementTagFilter: {
+        value: managementTagFilter
       }
-      identityQueryOverride: {
-        value: identityQueryOverride
+      identityTagFilter: {
+        value: identityTagFilter
       }
     }
   }
