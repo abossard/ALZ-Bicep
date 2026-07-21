@@ -1,58 +1,55 @@
 targetScope = 'subscription'
 
-// healthmodel-policy: DeployIfNotExists policy that provisions a Microsoft.CloudHealth
-// platform health model with one per-domain discovery rule (Security, Connectivity,
-// Management, Identity). See healthmodel-policy.README.md for concepts, parameters,
-// and deploy/verify steps.
+metadata name = 'ALZ Bicep - CloudHealth Platform Health Model Policy'
+metadata description = 'Deploys a preview Microsoft CloudHealth platform health model through Azure Policy.'
 
-// Parameters (single source of defaults; the policy definition below carries no defaultValue)
+type typTagFilter = {
+  key: string
+  value: string
+}
 
-@description('Location for the discovery identity, policy assignment identity and remediation deployments. Must support Microsoft.CloudHealth (for example uksouth, centralus, swedencentral, northeurope).')
-param location string = 'uksouth'
+@sys.description('Location for the discovery identity, policy assignment identity, and remediation deployments. Must support Microsoft.CloudHealth.')
+param parLocation string = 'uksouth'
 
-@description('Resource group the platform health model is deployed into. Must already exist.')
-param targetResourceGroupName string = 'rg-alz-healthmodels'
+@sys.description('Name of the existing resource group into which the platform health model is deployed.')
+param parTargetResourceGroupName string = 'rg-alz-healthmodels'
 
-@description('Platform health model name to deploy. One model carries all four domain discovery rules.')
-param healthModelName string = 'alz-platform-healthmodel'
+@sys.description('Name of the platform health model. One model contains all four domain discovery rules.')
+param parHealthModelName string = 'alz-platform-healthmodel'
 
-@description('Name of the user-assigned managed identity the discovery rules run as.')
-param identityName string = 'alz-healthmodel-mi'
+@sys.description('Name of the user-assigned managed identity used by the discovery rules.')
+param parIdentityName string = 'alz-healthmodel-mi'
 
-@description('Policy definition name.')
-param policyName string = 'Deploy-ALZ-CloudHealth-PlatformModel'
+@sys.description('Name of the custom policy definition.')
+param parPolicyName string = 'Deploy-ALZ-CloudHealth-PlatformModel'
 
-@description('Policy assignment name.')
+@sys.description('Name of the policy assignment.')
 @maxLength(24)
-param assignmentName string = 'Deploy-ALZ-CloudHealth'
+param parAssignmentName string = 'Deploy-ALZ-CloudHealth'
 
-@description('Policy effect.')
-@allowed([
-  'DeployIfNotExists'
-  'Disabled'
-])
-param effect string = 'DeployIfNotExists'
+@sys.description('Deploy the health model through policy remediation. Set to false to keep the policy, identities, and RBAC deployed with a Disabled effect.')
+param parDeployHealthModel bool = true
 
-@description('Enforcement mode for the assignment.')
 @allowed([
   'Default'
   'DoNotEnforce'
 ])
-param enforcementMode string = 'Default'
+@sys.description('Enforcement mode for the policy assignment.')
+param parEnforcementMode string = 'Default'
 
-@description('Resource types added to EVERY domain\'s discovery query (unioned with the per-domain list). Empty by default: an operator hook to inject a type across all domains. Pick monitorable types - resources such as resource groups have no health signals.')
-param includedResourceTypesGlobal array = []
+@sys.description('Resource types added to every domain discovery query and unioned with each per-domain list.')
+param parIncludedResourceTypesGlobal array = []
 
-@description('Resource types discovered for the Security platform domain (unioned with the global list). Override to add/replace Security types.')
-param securityResourceTypes array = [
+@sys.description('Resource types discovered for the Security platform domain, unioned with the global list.')
+param parSecurityResourceTypes array = [
   'Microsoft.KeyVault/vaults'
   'Microsoft.Network/azureFirewalls'
   'Microsoft.Network/firewallPolicies'
   'Microsoft.Network/ddosProtectionPlans'
 ]
 
-@description('Resource types discovered for the Connectivity platform domain (unioned with the global list). Override to add/replace Connectivity types.')
-param connectivityResourceTypes array = [
+@sys.description('Resource types discovered for the Connectivity platform domain, unioned with the global list.')
+param parConnectivityResourceTypes array = [
   'Microsoft.Network/virtualNetworks'
   'Microsoft.Network/virtualNetworkGateways'
   'Microsoft.Network/expressRouteCircuits'
@@ -65,8 +62,8 @@ param connectivityResourceTypes array = [
   'Microsoft.Network/connections'
 ]
 
-@description('Resource types discovered for the Management platform domain (unioned with the global list). Override to add/replace Management types.')
-param managementResourceTypes array = [
+@sys.description('Resource types discovered for the Management platform domain, unioned with the global list.')
+param parManagementResourceTypes array = [
   'Microsoft.OperationalInsights/workspaces'
   'Microsoft.Automation/automationAccounts'
   'Microsoft.RecoveryServices/vaults'
@@ -75,92 +72,94 @@ param managementResourceTypes array = [
   'Microsoft.Insights/actionGroups'
 ]
 
-@description('Resource types discovered for the Identity platform domain (unioned with the global list). Override to add/replace Identity types.')
-param identityResourceTypes array = [
+@sys.description('Resource types discovered for the Identity platform domain, unioned with the global list.')
+param parIdentityResourceTypes array = [
   'Microsoft.ManagedIdentity/userAssignedIdentities'
   'Microsoft.Compute/virtualMachines'
   'Microsoft.KeyVault/vaults'
   'Microsoft.Network/privateDnsZones'
 ]
 
-@description('Subscription id whose resources the Security domain discovery queries. Required.')
 @minLength(36)
-param securitySubscriptionId string = 'b2af20ad-98fa-4aa7-94c3-059663641d9f'
+@sys.description('Subscription ID whose resources the Security domain discovery queries.')
+param parSecuritySubscriptionId string = subscription().subscriptionId
 
-@description('Subscription id whose resources the Connectivity domain discovery queries. Required.')
 @minLength(36)
-param connectivitySubscriptionId string = 'b2af20ad-98fa-4aa7-94c3-059663641d9f'
+@sys.description('Subscription ID whose resources the Connectivity domain discovery queries.')
+param parConnectivitySubscriptionId string = subscription().subscriptionId
 
-@description('Subscription id whose resources the Management domain discovery queries. Required.')
 @minLength(36)
-param managementSubscriptionId string = 'b2af20ad-98fa-4aa7-94c3-059663641d9f'
+@sys.description('Subscription ID whose resources the Management domain discovery queries.')
+param parManagementSubscriptionId string = subscription().subscriptionId
 
-@description('Subscription id whose resources the Identity domain discovery queries. Required.')
 @minLength(36)
-param identitySubscriptionId string = 'b2af20ad-98fa-4aa7-94c3-059663641d9f'
+@sys.description('Subscription ID whose resources the Identity domain discovery queries.')
+param parIdentitySubscriptionId string = subscription().subscriptionId
 
-@description('Optional tag filter for the Security domain: a list of { key, value } pairs that must ALL match (AND) on a resource for it to be discovered. Empty by default (no tag filtering). Up to 5 pairs (the embedded query builds a fixed number of clauses).')
 @maxLength(5)
-param securityTagFilter array = []
+@sys.description('Optional list of up to five { key, value } tag pairs that must all match for Security resources.')
+param parSecurityTagFilter typTagFilter[] = []
 
-@description('Optional tag filter for the Connectivity domain: a list of { key, value } pairs that must ALL match (AND) on a resource for it to be discovered. Empty by default (no tag filtering). Up to 5 pairs (the embedded query builds a fixed number of clauses).')
 @maxLength(5)
-param connectivityTagFilter array = []
+@sys.description('Optional list of up to five { key, value } tag pairs that must all match for Connectivity resources.')
+param parConnectivityTagFilter typTagFilter[] = []
 
-@description('Optional tag filter for the Management domain: a list of { key, value } pairs that must ALL match (AND) on a resource for it to be discovered. Empty by default (no tag filtering). Up to 5 pairs (the embedded query builds a fixed number of clauses).')
 @maxLength(5)
-param managementTagFilter array = []
+@sys.description('Optional list of up to five { key, value } tag pairs that must all match for Management resources.')
+param parManagementTagFilter typTagFilter[] = []
 
-@description('Optional tag filter for the Identity domain: a list of { key, value } pairs that must ALL match (AND) on a resource for it to be discovered. Empty by default (no tag filtering). Up to 5 pairs (the embedded query builds a fixed number of clauses).')
 @maxLength(5)
-param identityTagFilter array = []
+@sys.description('Optional list of up to five { key, value } tag pairs that must all match for Identity resources.')
+param parIdentityTagFilter typTagFilter[] = []
 
-// Variables
-
-var builtInRoleIds = {
+var varBuiltInRoleIds = {
   Contributor: 'b24988ac-6180-42a0-ab88-20f7382dd24c'
   ManagedIdentityOperator: 'f1a07417-d97a-45cb-824c-7a7467783830'
   Reader: 'acdd72a7-3385-48ef-bd42-f606fba81ae7'
 }
 
-// Roles the policy assignment (remediation) identity needs: write CloudHealth
-// resources and attach the discovery identity. Reader is granted only to the
-// discovery identity below, not here.
-var remediationRoleIds = {
-  Contributor: builtInRoleIds.Contributor
-  ManagedIdentityOperator: builtInRoleIds.ManagedIdentityOperator
+var varRemediationRoleIds = {
+  Contributor: varBuiltInRoleIds.Contributor
+  ManagedIdentityOperator: varBuiltInRoleIds.ManagedIdentityOperator
 }
 
-var authenticationSettingName = 'managed-identity'
+var varAuthenticationSettingName = 'managed-identity'
+var varPolicyEffect = parDeployHealthModel ? 'DeployIfNotExists' : 'Disabled'
+var varDiscoverySubscriptionIds = union([
+  parSecuritySubscriptionId
+  parConnectivitySubscriptionId
+  parManagementSubscriptionId
+  parIdentitySubscriptionId
+], [])
 
-resource targetResourceGroup 'Microsoft.Resources/resourceGroups@2025-04-01' existing = {
-  name: targetResourceGroupName
+resource resTargetResourceGroup 'Microsoft.Resources/resourceGroups@2025-04-01' existing = {
+  name: parTargetResourceGroupName
 }
 
-// Discovery identity (resource-group-scoped module)
-
-module discoveryIdentity 'healthmodel-discovery-identity.bicep' = {
-  scope: targetResourceGroup
+module modDiscoveryIdentity 'healthModelDiscoveryIdentity.bicep' = {
+  scope: resTargetResourceGroup
   name: 'alz-healthmodel-identity'
   params: {
-    identityName: identityName
-    location: location
+    parIdentityName: parIdentityName
+    parLocation: parLocation
   }
 }
 
-resource discoverySubscriptionReader 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(subscription().id, identityName, builtInRoleIds.Reader)
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', builtInRoleIds.Reader)
-    principalId: discoveryIdentity.outputs.principalId
-    principalType: 'ServicePrincipal'
+module modDiscoverySubscriptionReader '../../roleAssignments/roleAssignmentSubscription.bicep' = [
+  for discoverySubscriptionId in varDiscoverySubscriptionIds: {
+    scope: subscription(discoverySubscriptionId)
+    name: 'health-model-reader-${uniqueString(discoverySubscriptionId, parIdentityName)}'
+    params: {
+      parRoleAssignmentNameGuid: guid(discoverySubscriptionId, varBuiltInRoleIds.Reader, modDiscoveryIdentity.outputs.outPrincipalId)
+      parRoleDefinitionId: varBuiltInRoleIds.Reader
+      parAssigneePrincipalType: 'ServicePrincipal'
+      parAssigneeObjectId: modDiscoveryIdentity.outputs.outPrincipalId
+    }
   }
-}
+]
 
-// Policy definition (DeployIfNotExists)
-
-resource policyDefinition 'Microsoft.Authorization/policyDefinitions@2025-01-01' = {
-  name: policyName
+resource resPolicyDefinition 'Microsoft.Authorization/policyDefinitions@2025-01-01' = {
+  name: parPolicyName
   properties: {
     displayName: 'Deploy a Microsoft CloudHealth platform health model with per-domain discovery rules'
     description: 'Deploys a Microsoft.CloudHealth platform health model with one discovery rule per platform domain (Security, Connectivity, Management, Identity), each discovering resources by type, when missing.'
@@ -168,7 +167,7 @@ resource policyDefinition 'Microsoft.Authorization/policyDefinitions@2025-01-01'
     mode: 'All'
     metadata: {
       category: 'Monitoring'
-      version: '4.0.0'
+      version: '1.0.0'
       preview: true
     }
     parameters: {
@@ -331,8 +330,8 @@ resource policyDefinition 'Microsoft.Authorization/policyDefinitions@2025-01-01'
           existenceScope: 'resourceGroup'
           deploymentScope: 'resourceGroup'
           roleDefinitionIds: [
-            '/providers/Microsoft.Authorization/roleDefinitions/${builtInRoleIds.Contributor}'
-            '/providers/Microsoft.Authorization/roleDefinitions/${builtInRoleIds.ManagedIdentityOperator}'
+            '/providers/Microsoft.Authorization/roleDefinitions/${varBuiltInRoleIds.Contributor}'
+            '/providers/Microsoft.Authorization/roleDefinitions/${varBuiltInRoleIds.ManagedIdentityOperator}'
           ]
           deployment: {
             properties: {
@@ -640,93 +639,94 @@ resource policyDefinition 'Microsoft.Authorization/policyDefinitions@2025-01-01'
   }
 }
 
-// Policy assignment
-
-resource policyAssignment 'Microsoft.Authorization/policyAssignments@2025-01-01' = {
-  name: assignmentName
-  location: location
+resource resPolicyAssignment 'Microsoft.Authorization/policyAssignments@2025-01-01' = {
+  name: parAssignmentName
+  location: parLocation
   identity: {
     type: 'SystemAssigned'
   }
   properties: {
     displayName: 'Deploy CloudHealth platform health model with per-domain discovery'
-    policyDefinitionId: policyDefinition.id
-    enforcementMode: enforcementMode
+    policyDefinitionId: resPolicyDefinition.id
+    enforcementMode: parEnforcementMode
     parameters: {
       effect: {
-        value: effect
+        value: varPolicyEffect
       }
       targetResourceGroupName: {
-        value: targetResourceGroupName
+        value: parTargetResourceGroupName
       }
       healthModelName: {
-        value: healthModelName
+        value: parHealthModelName
       }
       location: {
-        value: location
+        value: parLocation
       }
       userAssignedIdentityId: {
-        value: discoveryIdentity.outputs.identityId
+        value: modDiscoveryIdentity.outputs.outIdentityId
       }
       authenticationSettingName: {
-        value: authenticationSettingName
+        value: varAuthenticationSettingName
       }
       includedResourceTypesGlobal: {
-        value: includedResourceTypesGlobal
+        value: parIncludedResourceTypesGlobal
       }
       securityResourceTypes: {
-        value: securityResourceTypes
+        value: parSecurityResourceTypes
       }
       connectivityResourceTypes: {
-        value: connectivityResourceTypes
+        value: parConnectivityResourceTypes
       }
       managementResourceTypes: {
-        value: managementResourceTypes
+        value: parManagementResourceTypes
       }
       identityResourceTypes: {
-        value: identityResourceTypes
+        value: parIdentityResourceTypes
       }
       securitySubscriptionId: {
-        value: securitySubscriptionId
+        value: parSecuritySubscriptionId
       }
       connectivitySubscriptionId: {
-        value: connectivitySubscriptionId
+        value: parConnectivitySubscriptionId
       }
       managementSubscriptionId: {
-        value: managementSubscriptionId
+        value: parManagementSubscriptionId
       }
       identitySubscriptionId: {
-        value: identitySubscriptionId
+        value: parIdentitySubscriptionId
       }
       securityTagFilter: {
-        value: securityTagFilter
+        value: parSecurityTagFilter
       }
       connectivityTagFilter: {
-        value: connectivityTagFilter
+        value: parConnectivityTagFilter
       }
       managementTagFilter: {
-        value: managementTagFilter
+        value: parManagementTagFilter
       }
       identityTagFilter: {
-        value: identityTagFilter
+        value: parIdentityTagFilter
       }
     }
   }
 }
 
-resource roleAssignments 'Microsoft.Authorization/roleAssignments@2022-04-01' = [
-  for role in items(remediationRoleIds): {
-    name: guid(subscription().id, assignmentName, role.value)
+resource resRemediationRoleAssignments 'Microsoft.Authorization/roleAssignments@2022-04-01' = [
+  for role in items(varRemediationRoleIds): {
+    name: guid(subscription().id, parAssignmentName, role.value)
     properties: {
       roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', role.value)
-      principalId: policyAssignment.identity.principalId
+      principalId: resPolicyAssignment.identity.principalId
       principalType: 'ServicePrincipal'
     }
   }
 ]
 
-// Outputs
+@sys.description('Resource ID of the custom policy definition.')
+output outPolicyDefinitionId string = resPolicyDefinition.id
 
-output policyDefinitionId string = policyDefinition.id
-output policyAssignmentId string = policyAssignment.id
-output discoveryIdentityId string = discoveryIdentity.outputs.identityId
+@sys.description('Resource ID of the policy assignment.')
+output outPolicyAssignmentId string = resPolicyAssignment.id
+
+@sys.description('Resource ID of the discovery user-assigned managed identity.')
+output outDiscoveryIdentityId string = modDiscoveryIdentity.outputs.outIdentityId
