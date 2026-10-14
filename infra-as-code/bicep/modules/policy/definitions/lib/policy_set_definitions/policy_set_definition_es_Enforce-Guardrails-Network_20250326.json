@@ -5,13 +5,15 @@
   "scope": null,
   "properties": {
     "policyType": "Custom",
-    "displayName": "Enforce recommended guardrails for Network and Networking services",
-    "description": "This policy initiative is a group of policies that ensures Network and Networking services are compliant per regulated Landing Zones.",
+    "displayName": "[Deprecated]: Enforce recommended guardrails for Network and Networking services",
+    "description": "This policy initiative is a group of policies that ensures Network and Networking services are compliant per regulated Landing Zones. Superseded by https://www.azadvertizer.net/azpolicyinitiativesadvertizer/Enforce-Guardrails-Network_20260714.html",
     "metadata": {
-      "version": "2.0.0",
+      "version": "2.0.0-deprecated",
       "category": "Network",
       "source": "https://github.com/Azure/Enterprise-Scale/",
       "replacesPolicy": "Enforce-Guardrails-Network",
+      "deprecated": true,
+      "supersededBy": "Enforce-Guardrails-Network_20260714",
       "alzCloudEnvironments": [
         "AzureCloud",
         "AzureChinaCloud",
